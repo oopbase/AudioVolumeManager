@@ -1,4 +1,4 @@
-### AudioVolumeManager
+## AudioVolumeManager
 
 This is a command line utility for saving restoring audio volume profiles on windows machines.
 
@@ -18,11 +18,6 @@ OPTIONS:
     --remove <id>         Remove a profile by given id.
     --apply <id>          Apply a profile by given id.
     --help                display this list of options.
-
-### Known issues
-
-* Incorrect use of the parameters can lead to exceptions
-
 
 ### Building
 
