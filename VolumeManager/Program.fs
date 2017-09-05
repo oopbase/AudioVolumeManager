@@ -1,7 +1,9 @@
-﻿[<AutoOpen>]
+﻿open System
+
+[<AutoOpen>]
 module Infrastructure =
     open Argu
-
+    
     type CliArguments =
         | List
         | Add of name:string * volume:int
@@ -15,6 +17,29 @@ module Infrastructure =
                 | Add _ -> "Add a new profile with a name and audio volume."
                 | Remove _ -> "Remove a profile by given id."
                 | Apply _ -> "Apply a profile by given id."
+
+    let traceColored color (s : string) = 
+        let curColor = Console.ForegroundColor
+        if curColor <> color then Console.ForegroundColor <- color
+        use textWriter = 
+            match color with
+            | ConsoleColor.Red -> Console.Error
+            | ConsoleColor.Yellow -> Console.Out
+            | _ -> Console.Out
+
+        textWriter.WriteLine s
+        if curColor <> color then Console.ForegroundColor <- curColor
+
+    type VolumeManagerExiter() =
+        interface IExiter with
+            member __.Name = "AudioVolumeManager exiter"
+            member __.Exit (msg, code) =
+                if code = ErrorCode.HelpText then
+                    printfn "%s" msg
+                    exit 0
+                else
+                    traceColored ConsoleColor.Red msg
+                    exit 1
 
 [<AutoOpen>]
 module Domain =
@@ -30,11 +55,10 @@ module Audio =
     open AudioSwitcher.AudioApi.CoreAudio
 
     let setVolume value =
-        let defaultPlaybackDevice = CoreAudioController().DefaultPlaybackDevice
+        let defaultPlaybackDevice = (new CoreAudioController()).DefaultPlaybackDevice
         defaultPlaybackDevice.Volume <- value
         
 module Storage =
-    open System
     open System.IO
     
     let private storageFile =
@@ -98,7 +122,8 @@ module Storage =
 
 [<EntryPoint>]
 let main argv = 
-    let parser = Argu.ArgumentParser.Create<CliArguments>()
+    let parser = Argu.ArgumentParser.Create<CliArguments>(helpTextMessage = "Help requested",
+                                                          errorHandler = VolumeManagerExiter())
     
     match parser.ParseCommandLine(argv).GetAllResults() with
     | [ argument ] ->
